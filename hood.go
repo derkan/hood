@@ -692,6 +692,70 @@ func (hood *Hood) Find(out interface{}) error {
 	query, args := hood.Dialect.QuerySql(hood)
 	return hood.FindSql(out, query, args...)
 }
+func (hood *Hood) FindOne(out interface{})error{
+    if hood.selectTable == ""{
+        hood.Select(out)
+    }
+    query, args := hood.Dialect.QuerySql(hood)
+    return hood.FindOneSql(out,query,args...)
+}
+func (hood *Hood) FindOneSql(out interface{}, query string, args ...interface{}) error {
+	hood.mutex.Lock()
+	defer hood.mutex.Unlock()
+	defer hood.Reset()
+
+	panicMsg := errors.New("expected pointer to struct")
+	if x := reflect.TypeOf(out).Kind(); x != reflect.Ptr {
+		panic(panicMsg)
+	}
+	outValue := reflect.Indirect(reflect.ValueOf(out))
+	if x := outValue.Kind(); x != reflect.Struct {
+		panic(panicMsg)
+	}
+	hood.logSql(query, args...)
+	stmt, err := hood.qo.Prepare(query)
+	if err != nil {
+		return hood.updateTxError(err)
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		return hood.updateTxError(err)
+	}
+	defer rows.Close()
+	cols, err := rows.Columns()
+	if err != nil {
+		return hood.updateTxError(err)
+	}
+	for rows.Next() {
+		containers := make([]interface{}, 0, len(cols))
+		for i := 0; i < cap(containers); i++ {
+			var v interface{}
+			containers = append(containers, &v)
+		}
+		err := rows.Scan(containers...)
+		if err != nil {
+			return err
+		}
+		// create a new row and fill
+		rowValue := reflect.New(reflect.TypeOf(outValue))
+		for i, v := range containers {
+			key := cols[i]
+			value := reflect.Indirect(reflect.ValueOf(v))
+			name := snakeToUpperCamel(key)
+			field := rowValue.Elem().FieldByName(name)
+			if field.IsValid() {
+				err = hood.Dialect.SetModelValue(value, field)
+				if err != nil {
+					return err
+				}
+			}
+		}
+        outValue.Set(rowValue)
+        break;
+	}
+	return nil
+}
 
 // FindSql performs a find using the specified custom sql query and arguments and
 // writes the results to the specified out interface{}.
