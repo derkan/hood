@@ -1,6 +1,7 @@
 package hood
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
 	"time"
@@ -38,20 +39,20 @@ func (d *mysql) SqlType(f interface{}, size int) string {
 		return "bigint"
 	case time.Time, Created, Updated:
 		return "timestamp"
-	case bool:
+	case bool, sql.NullBool:
 		return "boolean"
 	case int, int8, int16, int32, uint, uint8, uint16, uint32:
 		return "int"
-	case int64, uint64:
+	case int64, uint64, sql.NullInt64:
 		return "bigint"
-	case float32, float64:
+	case float32, float64, sql.NullFloat64:
 		return "double"
 	case []byte:
 		if size > 0 && size < 65532 {
 			return fmt.Sprintf("varbinary(%d)", size)
 		}
 		return "longblob"
-	case string:
+	case string, sql.NullString:
 		if size > 0 && size < 65532 {
 			return fmt.Sprintf("varchar(%d)", size)
 		}

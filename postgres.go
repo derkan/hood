@@ -1,6 +1,7 @@
 package hood
 
 import (
+	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
 	"strings"
@@ -27,17 +28,17 @@ func (d *postgres) SqlType(f interface{}, size int) string {
 		return "bigserial"
 	case time.Time, Created, Updated:
 		return "timestamp with time zone"
-	case bool:
+	case bool, sql.NullBool:
 		return "boolean"
 	case int, int8, int16, int32, uint, uint8, uint16, uint32:
 		return "integer"
-	case int64, uint64:
+	case int64, uint64, sql.NullInt64:
 		return "bigint"
-	case float32, float64:
+	case float32, float64, sql.NullFloat64:
 		return "double precision"
 	case []byte:
 		return "bytea"
-	case string:
+	case string, sql.NullString:
 		if size > 0 && size < 65532 {
 			return fmt.Sprintf("varchar(%d)", size)
 		}
