@@ -1,6 +1,7 @@
 package hood
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
 	"strings"
@@ -67,6 +68,21 @@ func (d *base) SetModelValue(driverValue, fieldValue reflect.Value) error {
 			} else {
 				panic(fmt.Sprintf("cannot set created value %T", driverValue.Elem().Interface()))
 			}
+		} else if fieldType == reflect.TypeOf(sql.NullBool{}) {
+			if b, ok := driverValue.Elem().Interface().(bool); ok {
+				fieldValue.Set(reflect.ValueOf(sql.NullBool{b, true}))
+			}
+		} else if fieldType == reflect.TypeOf(sql.NullFloat64{}) {
+			if f, ok := driverValue.Elem().Interface().(float64); ok {
+				fieldValue.Set(reflect.ValueOf(sql.NullFloat64{f, true}))
+			}
+		} else if fieldType == reflect.TypeOf(sql.NullInt64{}) {
+			if i, ok := driverValue.Elem().Interface().(int64); ok {
+				fieldValue.Set(reflect.ValueOf(sql.NullInt64{i, true}))
+			}
+		} else if fieldType == reflect.TypeOf(sql.NullString{}) {
+			str := string(driverValue.Elem().Bytes())
+			fieldValue.Set(reflect.ValueOf(sql.NullString{str, true}))
 		}
 	}
 	return nil
