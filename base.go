@@ -446,7 +446,7 @@ func (d *base) KeywordAutoIncrement() string {
 
 func (d *base) ForeignKey(fk *ForeignKey) string {
 	return fmt.Sprintf(
-		"FOREIGN KEY (%v) REFERENCES %v(%v) ON UPDATE %s ON DELETE %s",
+		"FOREIGN KEY (%v) REFERENCES %v(%v) ON UPDATE %v ON DELETE %v",
 		d.Dialect.Quote(fk.Column),
 		d.Dialect.Quote(fk.ReferenceTable),
 		d.Dialect.Quote(fk.ReferenceColumn),
