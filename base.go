@@ -300,6 +300,15 @@ func (d *base) CreateTableSql(model *Model, ifNotExists bool) string {
 			a = append(a, ", ")
 		}
 	}
+	if len(model.ForeignKeys) > 0 {
+		a = append(a, ", ")
+	}
+	for i, fk := range model.ForeignKeys {
+		a = append(a, d.Dialect.ForeignKey(fk))
+		if i < len(model.ForeignKeys)-1 {
+			a = append(a, ", ")
+		}
+	}
 	a = append(a, " )")
 	return strings.Join(a, "")
 }
@@ -433,4 +442,31 @@ func (d *base) KeywordPrimaryKey() string {
 
 func (d *base) KeywordAutoIncrement() string {
 	return "AUTOINCREMENT"
+}
+
+func (d *base) ForeignKey(fk *ForeignKey) string {
+	return fmt.Sprintf(
+		"FOREIGN KEY (%v) REFERENCES %v(%v) ON UPDATE %s ON DELETE %s",
+		d.Dialect.Quote(fk.Column),
+		d.Dialect.Quote(fk.ReferenceTable),
+		d.Dialect.Quote(fk.ReferenceColumn),
+		d.Dialect.ReferentialAction(fk.OnUpdate),
+		d.Dialect.ReferentialAction(fk.OnDelete),
+	)
+
+}
+
+func (d *base) ReferentialAction(ra ReferentialAction) string {
+	switch ra {
+	case Cascade:
+		return "CASCADE"
+	case Restrict:
+		return "RESTRICT"
+	case NoAction:
+		return "NO ACTION"
+	case SetNull:
+		return "SET NULL"
+	}
+
+	return "NO ACTION"
 }

@@ -55,6 +55,19 @@ type (
 	// Indexes represents an array of indexes.
 	Indexes []*Index
 
+	// ForeignKey represents a foreign key
+	ForeignKey struct {
+		Name            string
+		Column          string
+		ReferenceTable  string
+		ReferenceColumn string
+		OnUpdate        ReferentialAction
+		OnDelete        ReferentialAction
+	}
+
+	// ForeignKeys represents an array of foreign keys
+	ForeignKeys []*ForeignKey
+
 	// Created denotes a timestamp field that is automatically set on insert.
 	Created struct {
 		time.Time
@@ -67,10 +80,11 @@ type (
 
 	// Model represents a parsed schema interface{}.
 	Model struct {
-		Pk      *ModelField
-		Table   string
-		Fields  []*ModelField
-		Indexes Indexes
+		Pk          *ModelField
+		Table       string
+		Fields      []*ModelField
+		Indexes     Indexes
+		ForeignKeys ForeignKeys
 	}
 
 	// ModelField represents a schema field of a parsed model.
@@ -98,6 +112,11 @@ type (
 	// Indexed defines the indexes for a table. You can invoke Add on the passed instance.
 	Indexed interface {
 		Indexes(indexes *Indexes)
+	}
+
+	// ForeignKeyed defines the foreign keys for a table.
+	ForeignKeyed interface {
+		ForeignKeys(foreignKeys *ForeignKeys)
 	}
 
 	// TODO: implement aggregate function types
@@ -150,6 +169,15 @@ const (
 
 type Join int
 
+const (
+	Cascade = ReferentialAction(iota)
+	Restrict
+	NoAction
+	SetNull
+)
+
+type ReferentialAction int
+
 // Add adds an index
 func (ix *Indexes) Add(name string, columns ...string) {
 	*ix = append(*ix, &Index{Name: name, Columns: columns, Unique: false})
@@ -158,6 +186,11 @@ func (ix *Indexes) Add(name string, columns ...string) {
 // AddUnique adds an unique index
 func (ix *Indexes) AddUnique(name string, columns ...string) {
 	*ix = append(*ix, &Index{Name: name, Columns: columns, Unique: true})
+}
+
+// Add adds a foreign key
+func (fk *ForeignKeys) Add(name string, column string, referenceTable string, referenceColumn string, onUpdate ReferentialAction, onDelete ReferentialAction) {
+	*fk = append(*fk, &ForeignKey{Name: name, Column: column, ReferenceTable: referenceTable, ReferenceColumn: referenceColumn, OnUpdate: onUpdate, OnDelete: onDelete})
 }
 
 // Quote quotes the path using the given dialects Quote method
@@ -1313,6 +1346,12 @@ func addIndexes(m *Model, f interface{}) {
 	}
 }
 
+func addForeignKeys(m *Model, f interface{}) {
+	if t, ok := f.(ForeignKeyed); ok {
+		t.ForeignKeys(&m.ForeignKeys)
+	}
+}
+
 func interfaceToModel(f interface{}) (*Model, error) {
 	v := reflect.Indirect(reflect.ValueOf(f))
 	if v.Kind() != reflect.Struct {
@@ -1327,6 +1366,7 @@ func interfaceToModel(f interface{}) (*Model, error) {
 	}
 	addFields(m, t, v)
 	addIndexes(m, f)
+	addForeignKeys(m, f)
 	return m, nil
 }
 
