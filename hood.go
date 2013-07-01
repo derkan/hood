@@ -391,6 +391,18 @@ func (index *Index) GoDeclaration() string {
 	)
 }
 
+func (foreignKey *ForeignKey) GoDeclaration() string {
+	return fmt.Sprintf(
+		"foreignKeys.Add(\"%s\", \"%s\", \"%s\", \"%s\", %s, %s)",
+		foreignKey.Name,
+		foreignKey.Column,
+		foreignKey.ReferenceTable,
+		foreignKey.ReferenceColumn,
+		foreignKey.OnUpdate,
+		foreignKey.OnDelete,
+	)
+}
+
 func (model *Model) Validate() error {
 	for _, field := range model.Fields {
 		err := field.Validate()
@@ -414,6 +426,15 @@ func (model *Model) GoDeclaration() string {
 		)
 		for _, i := range model.Indexes {
 			a = append(a, "\t"+i.GoDeclaration())
+		}
+		a = append(a, "}")
+	}
+	if len(model.ForeignKeys) > 0 {
+		a = append(a,
+			fmt.Sprintf("\nfunc (table *%s) ForeignKeys(foreignKeys *hood.ForeignKeys) {", tableName),
+		)
+		for _, fk := range model.ForeignKeys {
+			a = append(a, "\t"+fk.GoDeclaration())
 		}
 		a = append(a, "}")
 	}
