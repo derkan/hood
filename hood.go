@@ -692,12 +692,12 @@ func (hood *Hood) Find(out interface{}) error {
 	query, args := hood.Dialect.QuerySql(hood)
 	return hood.FindSql(out, query, args...)
 }
-func (hood *Hood) FindOne(out interface{})error{
-    if hood.selectTable == ""{
-        hood.Select(out)
-    }
-    query, args := hood.Dialect.QuerySql(hood)
-    return hood.FindOneSql(out,query,args...)
+func (hood *Hood) FindOne(out interface{}) error {
+	if hood.selectTable == "" {
+		hood.Select(out)
+	}
+	query, args := hood.Dialect.QuerySql(hood)
+	return hood.FindOneSql(out, query, args...)
 }
 func (hood *Hood) FindOneSql(out interface{}, query string, args ...interface{}) error {
 	hood.mutex.Lock()
@@ -738,7 +738,7 @@ func (hood *Hood) FindOneSql(out interface{}, query string, args ...interface{})
 			return err
 		}
 		// create a new row and fill
-		rowValue := reflect.New(reflect.TypeOf(outValue))
+		rowValue := reflect.New(outValue.Type())
 		for i, v := range containers {
 			key := cols[i]
 			value := reflect.Indirect(reflect.ValueOf(v))
@@ -751,8 +751,9 @@ func (hood *Hood) FindOneSql(out interface{}, query string, args ...interface{})
 				}
 			}
 		}
-        outValue.Set(rowValue)
-        break;
+
+		outValue.Set(rowValue.Elem())
+		break
 	}
 	return nil
 }
