@@ -696,6 +696,7 @@ func (hood *Hood) FindOne(out interface{}) error {
 	if hood.selectTable == "" {
 		hood.Select(out)
 	}
+	hood.Limit(1)
 	query, args := hood.Dialect.QuerySql(hood)
 	return hood.FindOneSql(out, query, args...)
 }
@@ -704,14 +705,30 @@ func (hood *Hood) FindOneSql(out interface{}, query string, args ...interface{})
 	defer hood.mutex.Unlock()
 	defer hood.Reset()
 
-	panicMsg := errors.New("expected pointer to struct")
+	// Validate arg: it can either be a pointer to a struct, or a pointer to a pointer to a struct
+	// Must be pointer
 	if x := reflect.TypeOf(out).Kind(); x != reflect.Ptr {
-		panic(panicMsg)
+		panic("argument must be a pointer")
 	}
+
 	outValue := reflect.Indirect(reflect.ValueOf(out))
-	if x := outValue.Kind(); x != reflect.Struct {
-		panic(panicMsg)
+	outKind := outValue.Kind()
+	var elementType reflect.Type
+	if outKind == reflect.Ptr {
+		// Must be a pointer to a pointer to a struct...
+		elementType = outValue.Type().Elem()
+		if elementType.Kind() != reflect.Struct {
+			panic("argument must be a pointer to a pointer to a struct")
+		}
+
+	} else if outKind == reflect.Struct {
+		// Or just a pointer to a struct ...
+		elementType = outValue.Type()
+
+	} else {
+		panic("argument must be a pointer to a struct, or a pointer to a pointer to a struct")
 	}
+
 	hood.logSql(query, args...)
 	stmt, err := hood.qo.Prepare(query)
 	if err != nil {
@@ -738,7 +755,7 @@ func (hood *Hood) FindOneSql(out interface{}, query string, args ...interface{})
 			return err
 		}
 		// create a new row and fill
-		rowValue := reflect.New(outValue.Type())
+		rowValue := reflect.New(elementType)
 		for i, v := range containers {
 			key := cols[i]
 			value := reflect.Indirect(reflect.ValueOf(v))
@@ -752,7 +769,11 @@ func (hood *Hood) FindOneSql(out interface{}, query string, args ...interface{})
 			}
 		}
 
-		outValue.Set(rowValue.Elem())
+		if outKind == reflect.Struct {
+			outValue.Set(rowValue.Elem())
+		} else {
+			reflect.ValueOf(out).Elem().Set(rowValue)
+		}
 		break
 	}
 	return nil
