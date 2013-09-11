@@ -289,7 +289,7 @@ func main() {
 	tx := hd.Begin()
 	
 	// Create the Fruit Table
-	err = tx.CreateTable(&Fruit{})
+	err = tx.CreateTable(&Fruit{})
 	if err != nil {
 		panic(err)
 	}
