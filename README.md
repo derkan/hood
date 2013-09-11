@@ -270,16 +270,11 @@ func main() {
 		panic(err)
 	}
 
-	// Create a table
+	// Define a table's structure and data
 	type Fruit struct {
 		Id    hood.Id
 		Name  string `validate:"presence"`
 		Color string
-	}
-
-	err = hd.CreateTable(&Fruit{})
-	if err != nil {
-		panic(err)
 	}
 
 	fruits := []Fruit{
@@ -292,7 +287,13 @@ func main() {
 
 	// Start a transaction
 	tx := hd.Begin()
-
+	
+	// Create the Fruit Table
+	err = tx.CreateTable(&Fruit{})
+	if err != nil {
+		panic(err)
+	}
+	
 	ids, err := tx.SaveAll(&fruits)
 	if err != nil {
 		panic(err)
