@@ -12,7 +12,7 @@ For questions, suggestions and general topics visit the [group](https://groups.g
 - [Validation](#validation)
 - [Hooks](#hooks)
 - [Basic Example](#basic-example)
-- [Contributors](https://github.com/eaigner/hood/contributors)
+- [Contributors](https://github.com/derkan/hood/contributors)
 
 ## Changes
 - PR #66 Add support for sql null types
@@ -78,6 +78,26 @@ if err != nil {
 ```
 - PR #73 Fixing README so that the "Basic Example" correctly creates a table
 
+- Added support for CockroachDB
+CockroachDB uses postresql driver, connect like:
+```go
+    db, err := hood.OpenWithDialect("postgres", "cockroachdb", "user=USER dbname=DB port=26257 sslmode=disable")
+	//db, err := hood.Open(("postgres", "user=USER dbname=DB sslmode=disable")
+	if err != nil {
+		panic(err)
+	}
+```
+- Added support for UTC only timestamps and related types: `TimeUTC, CreatedUTC, UpdatedUTC`
+`CreatedUTC, UpdatedUTC` is filled with time.UTC()
+```go
+type MyTable struct {
+	Id            hood.Id    `sql:"notnull"`
+	Name          string     `sql:"size(128),notnull"`
+	ExpireOn      hood.TimeUTC
+	DefinedOn     hood.CreatedUTC
+	UpdatedOn     hood.UpdatedUTC
+}
+```
 ## Overview
 
 Hood is a database agnostic ORM for Go developed by [@eaignr](https://twitter.com/eaignr). It was written with following points in mind:
@@ -428,3 +448,12 @@ func main() {
 	hd.DropTable(&Fruit{})
 }
 ```
+
+## Contributors
+
+- [Erik Aigner](https://github.com/eaigner)
+- [Erkan Durmus](https://github.com/derkan)
+- [Adam Frisby](https://github.com/pix64)
+- [Dave Costantino](https://github.com/daver76)
+- [Gregory Rehm](https://github.com/hahnicity)
+- [Junior Vidotti](https://github.com/jrvidotti)
