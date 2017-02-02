@@ -28,6 +28,8 @@ func (d *postgres) SqlType(f interface{}, size int) string {
 		return "bigserial"
 	case time.Time, Created, Updated:
 		return "timestamp with time zone"
+	case TimeUTC, CreatedUTC, UpdatedUTC:
+		return "timestamp"
 	case bool, sql.NullBool:
 		return "boolean"
 	case int, int8, int16, int32, uint, uint8, uint16, uint32:

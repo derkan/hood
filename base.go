@@ -284,6 +284,7 @@ func (d *base) CreateTable(hood *Hood, model *Model) error {
 }
 
 func (d *base) CreateTableIfNotExists(hood *Hood, model *Model) error {
+	fmt.Println(d.Dialect.CreateTableSql(model, true))
 	_, err := hood.Exec(d.Dialect.CreateTableSql(model, true))
 	return err
 }
@@ -323,6 +324,12 @@ func (d *base) CreateTableSql(model *Model, ifNotExists bool) string {
 		a = append(a, d.Dialect.ForeignKey(fk))
 		if i < len(model.ForeignKeys)-1 {
 			a = append(a, ", ")
+		}
+	}
+	cntUqIdx := 0
+	for _, idx := range model.Indexes {
+		if idx.Unique {
+			cntUqIdx ++
 		}
 	}
 	a = append(a, " )")

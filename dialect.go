@@ -131,9 +131,9 @@ type Dialect interface {
 	// KeywordAutoIncrement returns the dialect specific keyword for 'AUTO_INCREMENT'.
 	KeywordAutoIncrement() string
 
-	// ForeignKey returns the dialect spefific foreign key constraint
+	// ForeignKey returns the dialect specific foreign key constraint
 	ForeignKey(fk *ForeignKey) string
 
-	// ReferentialAction returns the dialect spefific foreign key referntial action
+	// ReferentialAction returns the dialect specific foreign key referential action
 	ReferentialAction(ra ReferentialAction) string
 }

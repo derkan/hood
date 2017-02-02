@@ -78,6 +78,21 @@ type (
 		time.Time
 	}
 
+	// Timestamp at UTC
+	TimeUTC struct {
+		time.Time
+	}
+
+	// Updated denotes a timestamp field that is automatically set on update to UTC time.
+	CreatedUTC struct {
+		time.Time
+	}
+
+	// Updated denotes a timestamp field that is automatically set on update to utc Time.
+	UpdatedUTC struct {
+		time.Time
+	}
+
 	// Model represents a parsed schema interface{}.
 	Model struct {
 		Pk          *ModelField
@@ -117,6 +132,10 @@ type (
 	// ForeignKeyed defines the foreign keys for a table.
 	ForeignKeyed interface {
 		ForeignKeys(foreignKeys *ForeignKeys)
+	}
+	// ForeignKeyed defines the foreign keys for a table.
+	TableNamed interface {
+		TableName(name *string)
 	}
 
 	// TODO: implement aggregate function types
@@ -477,6 +496,19 @@ func Open(driverName, dataSourceName string) (*Hood, error) {
 		return nil, err
 	}
 	dialect := registeredDialects[driverName]
+	if dialect == nil {
+		return nil, errors.New("no dialect registered for driver name")
+	}
+	return New(database, dialect), nil
+}
+
+// Necessary when ORM dialect and DB driver is not same (for DB's using other DB's clients)
+func OpenWithDialect(driverName, dialectName, dataSourceName string) (*Hood, error) {
+	database, err := sql.Open(driverName, dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+	dialect := registeredDialects[dialectName]
 	if dialect == nil {
 		return nil, errors.New("no dialect registered for driver name")
 	}
@@ -1049,6 +1081,8 @@ func (hood *Hood) Save(f interface{}) (Id, error) {
 			switch f.Value.(type) {
 			case Created, Updated:
 				f.Value = now
+			case CreatedUTC, UpdatedUTC:
+				f.Value = now.UTC()
 			}
 		}
 		id, err = hood.Dialect.Insert(hood, model)
@@ -1069,10 +1103,17 @@ func (hood *Hood) Save(f interface{}) (Id, error) {
 				field.SetInt(int64(id))
 			case Updated:
 				field.Set(reflect.ValueOf(Updated{now}))
+			case UpdatedUTC:
+				field.Set(reflect.ValueOf(UpdatedUTC{now.UTC()}))
 			case Created:
 				if !isUpdate {
 					field.Set(reflect.ValueOf(Created{now}))
 				}
+			case CreatedUTC:
+				if !isUpdate {
+					field.Set(reflect.ValueOf(CreatedUTC{now.UTC()}))
+				}
+
 			}
 		}
 	}
@@ -1447,6 +1488,13 @@ func addFields(m *Model, t reflect.Type, v reflect.Value) {
 	}
 }
 
+func setTableName(m *Model, f interface{}) {
+	if t, ok := f.(TableNamed); ok {
+		t.TableName(&m.Table)
+	}
+}
+
+
 func addIndexes(m *Model, f interface{}) {
 	if t, ok := f.(Indexed); ok {
 		t.Indexes(&m.Indexes)
@@ -1471,6 +1519,7 @@ func interfaceToModel(f interface{}) (*Model, error) {
 		Fields:  []*ModelField{},
 		Indexes: Indexes{},
 	}
+	setTableName(m, f)
 	addFields(m, t, v)
 	addIndexes(m, f)
 	addForeignKeys(m, f)

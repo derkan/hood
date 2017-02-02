@@ -37,7 +37,7 @@ func (d *mysql) SqlType(f interface{}, size int) string {
 	switch f.(type) {
 	case Id:
 		return "bigint"
-	case time.Time, Created, Updated:
+	case time.Time, Created, Updated, TimeUTC, CreatedUTC, UpdatedUTC:
 		return "timestamp"
 	case bool, sql.NullBool:
 		return "boolean"
