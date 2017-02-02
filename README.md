@@ -3,7 +3,7 @@ If you are looking for something more lightweight and flexible, have a look at [
 For questions, suggestions and general topics visit the [group](https://groups.google.com/forum/#!forum/golang-hood).
 
 ## Index
-
+- [Changes From Original hood](#Changes)
 - [Overview](#overview)
 - [Documentation](#documentation)
 - [Opening a Database](#opening-a-database)
@@ -13,6 +13,70 @@ For questions, suggestions and general topics visit the [group](https://groups.g
 - [Hooks](#hooks)
 - [Basic Example](#basic-example)
 - [Contributors](https://github.com/eaigner/hood/contributors)
+
+## Changes
+- PR #66 Add support for sql null types
+```go
+type Test struct {
+    Id       hood.Id
+    Number   sql.NullInt64
+}
+
+// Connect and Start Transaction
+
+a = Test{}
+tx.Save(&a) //Number column is set to NULL in database (defaults to NULL)
+
+b = Test{}
+b.Number = sql.NullInt64{128, true} //Number column is set to 128 in database
+tx.Save(&b)
+
+c = Test{}
+c.Number = sql.NullInt64{128, false} //Number column is set to NULL in database since valid bool is set to false
+tx.Save(&c)
+```
+- PR #67 Add ability to define foreign keys in models
+```go
+type User struct {
+    Id   hood.Id
+    Name string
+}
+
+type Post struct {
+    Id      hood.Id
+    Content string
+    UserId  int64
+}
+
+func (table *Post) ForeignKeys(foreignKeys *hood.ForeignKeys) {
+    foreignKeys.Add("test_fk", "user_id", "user", "id", hood.Cascade, hood.Cascade)
+}
+```
+- PR # 70 Adds FindOne
+```go
+type findOneModel struct {
+	Id Id
+	A  string
+	B  int
+}
+// Test with struct
+var out findOneModel
+err = hd.Where("a", "=", "string!").And("b", "=", 2).FindOne(&out)
+if err != nil {
+	t.Fatal("error not nil", err)
+}
+if out.Id != 0 || out.A != "" || out.B != 0 {
+	t.Fatal("struct should be zeroed", out)
+}
+
+// Test with pointer to struct
+var out2 *findOneModel
+err = hd.Where("a", "=", "string!").And("b", "=", 2).FindOne(&out)
+if err != nil {
+	t.Fatal("error not nil", err)
+}
+```
+- PR #73 Fixing README so that the "Basic Example" correctly creates a table
 
 ## Overview
 
