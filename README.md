@@ -87,6 +87,11 @@ CockroachDB uses postresql driver, connect like:
 		panic(err)
 	}
 ```
+or:
+```go
+session, err := sql.Open("postgres", "user=USER dbname=DB port=26257 sslmode=disable")
+db := hood.New(session, NewCockroachDB())
+```
 - Added support for UTC only timestamps and related types: `TimeUTC, CreatedUTC, UpdatedUTC`
 `CreatedUTC, UpdatedUTC` is filled with time.UTC()
 ```go
